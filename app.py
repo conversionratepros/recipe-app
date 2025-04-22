@@ -119,6 +119,10 @@ def parse_recipe(recipe_text, idea_ids, url_template, ideas, primary_conversion_
     recipe['Key Idea Cumulative Priority Score'] = sum(idea.get('IdeaRank', 0) for idea in ideas)
     return recipe
 
+# If Devices was not parsed, default to 'ALL'
+if 'Devices' not in recipe:
+    recipe['Devices'] = 'ALL'
+
 def send_to_clickup(recipe, recipes_list_id):
     payload = {
         "name": recipe['Task Name'],
