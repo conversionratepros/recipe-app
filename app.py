@@ -6,9 +6,8 @@ import re
 # ------------------------------
 # Configuration
 # ------------------------------
-OPENAI_API_KEY = "your_openai_key_here"
-CLICKUP_API_TOKEN = "your_clickup_token_here"
-RECIPES_LIST_ID = "206647211"
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+CLICKUP_API_TOKEN = st.secrets["CLICKUP_API_TOKEN"]
 
 HEADERS = {
     "Authorization": CLICKUP_API_TOKEN,
@@ -120,7 +119,7 @@ def parse_recipe(recipe_text, idea_ids, url_template, ideas, primary_conversion_
     recipe['Key Idea Cumulative Priority Score'] = sum(idea.get('IdeaRank', 0) for idea in ideas)
     return recipe
 
-def send_to_clickup(recipe):
+def send_to_clickup(recipe, recipes_list_id):
     payload = {
         "name": recipe['Task Name'],
         "description": "",
@@ -135,7 +134,7 @@ def send_to_clickup(recipe):
             {"id": CUSTOM_FIELDS['Key Idea Cumulative Priority Score'], "value": recipe['Key Idea Cumulative Priority Score']}
         ]
     }
-    url = f"https://api.clickup.com/api/v2/list/{RECIPES_LIST_ID}/task"
+    url = f"https://api.clickup.com/api/v2/list/{recipes_list_id}/task"
     response = requests.post(url, headers=HEADERS, json=payload)
     return response.status_code == 200
 
@@ -147,6 +146,7 @@ st.title("🔬 A/B Test Recipe Generator")
 ids_input = st.text_input("Enter Custom Task IDs (comma separated):")
 primary_action = st.text_input("Enter Primary Conversion Action:")
 target_url = st.text_input("Enter Target URL:")
+recipes_list_id = st.text_input("Enter ClickUp Recipes List ID:")
 
 if st.button("Generate & Submit Recipe"):
     try:
@@ -155,7 +155,7 @@ if st.button("Generate & Submit Recipe"):
         url_template = target_url or ideas[0].get('URL Template') if ideas else ""
         recipe_text = generate_ab_test_recipe(ideas, primary_action)
         recipe = parse_recipe(recipe_text, task_ids, url_template, ideas, primary_action)
-        success = send_to_clickup(recipe)
+        success = send_to_clickup(recipe, recipes_list_id)
         if success:
             st.success(f"✅ Recipe '{recipe['Task Name']}' successfully submitted to ClickUp.")
         else:
