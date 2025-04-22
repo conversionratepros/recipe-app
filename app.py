@@ -111,15 +111,18 @@ def parse_recipe(recipe_text, idea_ids, url_template, ideas, primary_conversion_
             hypothesis_base = line.split('**Hypothesis:**')[1].strip()
             cleaned = clean_hypothesis(f"{hypothesis_base} and thus increase the {primary_conversion_action} rate.")
             recipe['Hypothesis'] = cleaned
+
+    # ✅ Add fallback *inside* the function, before returning
+    if 'Devices' not in recipe:
+        recipe['Devices'] = 'ALL'
+
     numbers = [idea['Number'] for idea in ideas]
     recipe['Task Name'] = f"Recipe {'.'.join(numbers)} | {recipe.get('Task Name', 'Untitled')} | {recipe['Devices']}"
     recipe['URL Template'] = url_template if url_template else "Default URL Template"
     recipe['Target Confidence'] = 95
     recipe['Target Power'] = 80
     recipe['Key Idea Cumulative Priority Score'] = sum(idea.get('IdeaRank', 0) for idea in ideas)
-    # If Devices was not parsed, default to 'ALL'
-if 'Devices' not in recipe:
-    recipe['Devices'] = 'ALL'
+    
     return recipe
 
 def send_to_clickup(recipe, recipes_list_id):
