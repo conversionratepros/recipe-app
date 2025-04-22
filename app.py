@@ -75,23 +75,63 @@ def fetch_ideas_by_ids(task_ids):
     return ideas
 
 def generate_ab_test_recipe(ideas, primary_conversion_action):
+    import streamlit as st
+
+    st.info("🧠 Generating recipe via OpenAI...")
+
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
     idea_descriptions = "\n".join(
-        f"- ID: {idea['ID']} | Description: {idea['Name']}" for idea in ideas
+        f"- ID: {idea['ID']} | Description: {idea['Name']}"
+        for idea in ideas
     )
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are an expert in creating A/B testing recipes..."},
-            {"role": "user", "content": f"""
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert in creating A/B testing recipes. Your task is to generate clear, concise, and grammatically correct hypotheses for A/B test plans."
+                },
+                {
+                    "role": "user",
+                    "content": f"""
 Combine the following A/B testing ideas into a cohesive A/B Test Recipe. 
+
 {idea_descriptions}
-... ending with the primary conversion action: '{primary_conversion_action}'.
-"""}
-        ]
-    )
-    return response.choices[0].message.content
+
+The hypothesis must:
+1. Be a single, grammatically correct sentence.
+2. Clearly describe the predicted impact of the changes.
+3. End succinctly with the primary conversion action: '{primary_conversion_action}'.
+4. Avoid redundant phrases, repetitions, or unnecessary elaboration.
+
+Provide the recipe in this format:
+**Task Name:** ...
+**Hypothesis:** ...
+**Primary Conversion Action:** ...
+**Page Targeted:** ...
+**Devices Targeted:** ...
+"""
+                }
+            ]
+        )
+
+        # Check if GPT gave a response
+        if not response or not response.choices or not response.choices[0].message.content:
+            raise ValueError("🧠 GPT response was empty or malformed.")
+
+        recipe_text = response.choices[0].message.content
+
+        # ✅ Show GPT output in app for debugging
+        st.text_area("🔍 GPT Recipe Output", recipe_text, height=300)
+
+        return recipe_text
+
+    except Exception as e:
+        st.error(f"❌ GPT API Error: {e}")
+        st.stop()
 
 def parse_recipe(recipe_text, idea_ids, url_template, ideas, primary_conversion_action):
     recipe = {}
