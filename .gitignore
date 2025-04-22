@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+.env
+.streamlit/secrets.toml
+ab_test_recipe_app.zip
+*.log
